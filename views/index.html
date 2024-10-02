@@ -40,9 +40,9 @@
     <hr style='margin: 0 50px'>
     <section id='testui' style='margin-left: 50px;'>
       <h3>Examples</h3>
-      Go to <a href='/api/issues/apitest/'><code>/api/issues/apitest/</code></a>  project
+      Go to <a href='/api/issues/alex-api/'><code>/api/issues/alex-api/</code></a>  project
       <h2 style="text-align: left">API Tests</h2>
-      <h3>Submit issue on <i>apitest</i></h3>
+      <h3>Submit issue on <i>alex-api</i></h3>
       <form id="testForm" class="border">
         <input type="text" name="issue_title" placeholder="*Title" style="width: 100px" required=''><br>
         <textarea type="text" name="issue_text" placeholder="*Text" style="width: 100px" required=''></textarea><br>
@@ -51,7 +51,7 @@
         <input type="text" name="status_text" placeholder="(opt)Status text" style="width: 100px"><br>
         <button type="submit">Submit Issue</button>
       </form><br>
-      <h3>Update issue on <i>apitest</i> (Change any or all to update issue on the _id supplied)</h3>
+      <h3>Update issue on <i>alex-api</i> (Change any or all to update issue on the _id supplied)</h3>
       <form id="testForm2" class="border">
         <input type="text" name="_id" placeholder="*_id" style="width: 100px" required=''><br>
         <input type="text" name="issue_title" placeholder="(opt)Title" style="width: 100px"><br>
@@ -62,7 +62,7 @@
         <label><input type="checkbox" name="open" value="false"> Check to close issue</label><br>
         <button type="submit">Submit Issue</button>
       </form><br>
-      <h3>Delete issue on <i>apitest</i></h3>
+      <h3>Delete issue on <i>alex-api</i></h3>
       <form id="testForm3" class="border">
         <input type="text" name="_id" placeholder="_id" style="width: 100px" required=''><br>
         <button type="submit">Delete Issue</button>
@@ -78,7 +78,7 @@
       $(function() {
         $('#testForm').submit(function(e) {
           $.ajax({
-            url: '/api/issues/apitest',
+            url: '/api/issues/alex-api',
             type: 'post',
             data: $('#testForm').serialize(),
             success: function(data) {
@@ -89,7 +89,7 @@
         });
         $('#testForm2').submit(function(e) {
           $.ajax({
-            url: '/api/issues/apitest',
+            url: '/api/issues/alex-api',
             type: 'put',
             data: $('#testForm2').serialize(),
             success: function(data) {
@@ -100,7 +100,7 @@
         });
         $('#testForm3').submit(function(e) {
           $.ajax({
-            url: '/api/issues/apitest',
+            url: '/api/issues/alex-api',
             type: 'delete',
             data: $('#testForm3').serialize(),
             success: function(data) {
