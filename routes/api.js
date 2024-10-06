@@ -1,19 +1,22 @@
 'use strict';
 
-const remoteDbUri = process.env.REMOTE_DB_URI +
-  '/api/issues' + '/' + process.env.PROJECT_NAME;
+const { ObjectId } = require('mongodb');
+const getProjectCollectionName = (req) => {
+  return req.params.project + '-issues';
+};
 
-module.exports = function (app) {
+module.exports = function (app, db) {
 
   app.route('/api/issues/:project')
 
     .get(async function (req, res) {
-      const queryString = new URLSearchParams(req.query).toString();
-      const getRes = await fetch(remoteDbUri + '?' + queryString)
-        .catch((err) => {
-          return res.send({ error: 'could not get issues' });
-        });
-      const issues = await getRes.json();
+      const query = req.query;
+      if (query._id) {
+        query._id = new ObjectId(query._id);
+      }
+      const issues = await db.collection(getProjectCollectionName(req))
+        .find(req.query)
+        .toArray();
 
       return res.send(issues);
     })
@@ -30,28 +33,24 @@ module.exports = function (app) {
       if (!issue_title || !issue_text || !created_by) {
         return res.send({ error: 'required field(s) missing' });
       }
-
       const issue = {
         issue_title,
         issue_text,
         created_by,
         assigned_to,
         status_text,
-        open: true
+        open: true,
+        created_on: new Date().toISOString(),
+        updated_on: new Date().toISOString()
       }
+      const insertRes = await db.collection(getProjectCollectionName(req))
+        .insertOne(issue)
+        .catch((err) => {
+          return res.send({ error: 'could not save an issue' });
+        }
+      );
 
-      try {
-        const savedRes = await fetch(remoteDbUri, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(issue)
-        });
-        const savedIssue = await savedRes.json();
-
-        return res.send(savedIssue);
-      } catch(err) {
-        return res.send({ error: 'could not save an issue' });
-      }
+      return res.send({ ...issue, _id: insertRes.insertedId });
     })
 
     .put(async function (req, res) {
@@ -65,30 +64,27 @@ module.exports = function (app) {
         return res.send({ error: 'no update field(s) sent', _id });
       }
 
-      let existedIssue;
-
-      try {
-        const getRes = await fetch(remoteDbUri + '?_id=' + _id)
-        const issues = await getRes.json()
-        existedIssue = issues[0];
-      } catch(err) {
-        return res.send({ error: 'could not update', _id });
-      }
-
       Object.keys(fieldsToUpdate).forEach((key) => {
         if (!fieldsToUpdate[key]) {
           delete fieldsToUpdate[key];
         }
       });
 
-      await fetch(remoteDbUri, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...existedIssue, ...fieldsToUpdate })
-      }).catch((err) => {
-        return res.send({ error: 'could not update', _id });
-      });
+      try {
+        const updateRes = await db.collection(getProjectCollectionName(req))
+          .updateOne(
+            { _id: new ObjectId(_id) },
+            { $set: {
+              ...fieldsToUpdate,
+              updated_on: new Date().toISOString()
+            }});
 
+          if (updateRes.modifiedCount < 1) {
+            throw new Error('could not update')
+          }
+      } catch (err) {
+        return res.send({ error: 'could not update', _id });
+      }
       return res.send({ result: 'successfully updated', _id });
     })
 
@@ -100,23 +96,15 @@ module.exports = function (app) {
       }
 
       try {
-        const getRes = await fetch(remoteDbUri + '?_id=' + _id)
-        const issues = await getRes.json()
+        const deleteRes = await db.collection(getProjectCollectionName(req))
+          .deleteOne({ _id: new ObjectId(_id) });
 
-        if (issues.length === 0) {
-          throw new Error();
+        if (deleteRes.deletedCount < 1) {
+          throw new Error('could not delete');
         }
-      } catch(err) {
+      } catch (err) {
         return res.send({ error: 'could not delete', _id });
       }
-
-      await fetch(remoteDbUri, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ _id })
-      }).catch((err) => {
-        return res.send({ error: 'could not delete', _id });
-      });
 
       return res.send({ result: 'successfully deleted', _id });
     });
